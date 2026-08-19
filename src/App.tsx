@@ -55,9 +55,9 @@ export default function App() {
     go(step + 1)
   }
   const toggleWorkType = (value: string) => set('workTypes', data.workTypes.includes(value) ? data.workTypes.filter(x => x !== value) : [...data.workTypes, value])
-  const reset = () => {
-    if (!confirm('Vill du radera alla uppgifter i det öppna formuläret och börja om? Detta går inte att ångra.')) return
-    localStorage.removeItem(archiveId ? archiveKey(archiveId) : ACTIVE_STORAGE_KEY)
+  const startNew = () => {
+    if (!confirm('Vill du starta ett nytt formulär? Uppgifterna i det pågående formuläret rensas. Sparade formulär påverkas inte.')) return
+    if (!archiveId) localStorage.removeItem(ACTIVE_STORAGE_KEY)
     history.replaceState({}, '', `${location.origin}${location.pathname}`)
     setArchiveId(''); setLastSaved(null); setSavedForms(listArchivedForms()); setData(createInitialData()); setStep(1)
   }
@@ -116,7 +116,7 @@ export default function App() {
   ]
 
   return <>
-    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={() => { setSavedForms(listArchivedForms()); setShowArchives(true) }}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost danger" onClick={reset}>Rensa formuläret</button></div></header>
+    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={startNew}>Nytt formulär</button><button type="button" className="ghost" onClick={() => { setSavedForms(listArchivedForms()); setShowArchives(true) }}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost" onClick={() => go(14)}>Gå till sammanställning</button></div></header>
     {showArchives && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowArchives(false) }}><section className="archive-modal" role="dialog" aria-modal="true" aria-labelledby="archive-title"><div className="archive-head"><div><h2 id="archive-title">Sparade formulär</h2><p>Formulären finns endast i den här webbläsaren på den här enheten.</p></div><button type="button" aria-label="Stäng" onClick={() => setShowArchives(false)}>×</button></div>{savedForms.length ? <div className="archive-list">{savedForms.map(form => <article className="archive-row" key={form.id}><div><b>{form.address || 'Adress saknas'}</b><span>{form.customerName || 'Kundnamn saknas'} · Bedömning {form.assessmentDate || 'datum saknas'}</span><small>Sparad {form.savedDate || 'okänt datum'}{form.imageCount ? ` · ${form.imageCount} bilder` : ''}</small></div><div className="archive-actions"><a href={form.url}>Öppna</a><button type="button" onClick={() => removeSavedForm(form.id)}>Radera</button></div></article>)}</div> : <div className="archive-empty"><b>Det finns inga sparade formulär.</b><span>En kopia skapas automatiskt när du genererar en PDF.</span></div>}</section></div>}
     <div className="progress-wrap"><div className="progress-meta"><span>Steg {step} av {stepNames.length}</span><b>{stepNames[step - 1]}</b><span>{Math.round(step / stepNames.length * 100)} %</span></div><div className="progress"><span style={{ width: `${step / stepNames.length * 100}%` }} /></div></div>
     <main>

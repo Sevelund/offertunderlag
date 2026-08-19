@@ -98,13 +98,13 @@ textarea.large { min-height: 180px; }
 .secondary { background: white; color: var(--green); border: 1px solid #aab8b0; }
 footer { text-align: center; color: #6d7772; padding: 20px; font-size: 13px; }
 @media (max-width: 650px) {
-  .topbar { padding: 0 14px; height: 68px; }
+  .topbar { padding: 10px 14px; height: auto; min-height: 68px; flex-wrap: wrap; }
   .brand .mark { width: 36px; height: 36px; }
   .brand strong { font-size: 14px; }
   .brand small { font-size: 12px; }
   .ghost { padding: 8px 9px; font-size: 12px; }
-  .top-actions { gap: 5px; }
-  .top-actions .ghost { max-width: 105px; line-height: 1.15; }
+  .top-actions { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .top-actions .ghost { max-width: none; min-height: 44px; line-height: 1.15; }
   .progress-wrap { padding: 11px 14px; }
   .progress-meta { grid-template-columns: auto 1fr auto; }
   .progress-meta b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
