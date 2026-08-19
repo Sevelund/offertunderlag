@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import type { FormData, ProjectImage } from './types'
 import { conditions, equipmentTypes, excavatorSizes, massTypes, materialTypes, otherMaterialTypes, units, workTypes } from './constants'
 import { blankEquipment, blankExcavator, blankMachine, blankMassOut, blankMaterialIn, blankOtherMaterial, createInitialData, id } from './defaults'
@@ -8,6 +8,7 @@ import { compressImage } from './image'
 import { generatePdf } from './pdf'
 import { Field, RepeaterCard, Section, YesNo } from './components'
 import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, deleteArchivedForm, listArchivedForms, loadArchivedForm, saveArchivedForm, type SavedArchive } from './archive'
+import { SITE_AUTH_KEY, SITE_PASSWORD_HASH, sessionIsUnlocked, unlockSession, verifyPassword } from './auth'
 
 const stepNames = ['Grunduppgifter', 'Omfattning', 'Grävmaskin', 'Dumper och hjullastare', 'Padda och utrustning', 'Material till platsen', 'Massor från platsen', 'Övrigt material', 'Syfte', 'Genomförande', 'Förutsättningar', 'Övrig information', 'Bilder', 'Sammanställning']
 const num = (value: string) => Number(value) || 0
@@ -24,6 +25,7 @@ function loadData(): FormData {
 }
 
 export default function App() {
+  const [siteUnlocked, setSiteUnlocked] = useState(() => sessionIsUnlocked(SITE_AUTH_KEY))
   const [data, setData] = useState<FormData>(loadData)
   const [step, setStep] = useState(1)
   const [archiveId, setArchiveId] = useState(archiveIdFromUrl)
@@ -105,6 +107,16 @@ export default function App() {
     if (lastSaved?.id === id) setLastSaved(null)
   }
 
+  const unlockSite = async (password: string) => {
+    if (!await verifyPassword(password, SITE_PASSWORD_HASH)) return false
+    unlockSession(SITE_AUTH_KEY); setSiteUnlocked(true); return true
+  }
+  const openArchives = () => {
+    setSavedForms(listArchivedForms()); setShowArchives(true)
+  }
+
+  if (!siteUnlocked) return <PasswordGate title="Offertunderlag" description="Ange lösenordet för att öppna sidan." onUnlock={unlockSite} />
+
   const ownership = (value: string, onChange: (v: string) => void) => <select value={value} onChange={e => onChange(e.target.value)}><option>Egen</option><option>Hyrd</option></select>
   const summaryRows = [
     ['Kund', data.customerName], ['Arbetsplats', data.address],
@@ -116,7 +128,7 @@ export default function App() {
   ]
 
   return <>
-    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={startNew}>Nytt formulär</button><button type="button" className="ghost" onClick={() => { setSavedForms(listArchivedForms()); setShowArchives(true) }}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost" onClick={() => go(14)}>Gå till sammanställning</button></div></header>
+    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={startNew}>Nytt formulär</button><button type="button" className="ghost" onClick={openArchives}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost" onClick={() => go(14)}>Gå till sammanställning</button></div></header>
     {showArchives && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowArchives(false) }}><section className="archive-modal" role="dialog" aria-modal="true" aria-labelledby="archive-title"><div className="archive-head"><div><h2 id="archive-title">Sparade formulär</h2><p>Formulären finns endast i den här webbläsaren på den här enheten.</p></div><button type="button" aria-label="Stäng" onClick={() => setShowArchives(false)}>×</button></div>{savedForms.length ? <div className="archive-list">{savedForms.map(form => <article className="archive-row" key={form.id}><div><b>{form.address || 'Adress saknas'}</b><span>{form.customerName || 'Kundnamn saknas'} · Bedömning {form.assessmentDate || 'datum saknas'}</span><small>Sparad {form.savedDate || 'okänt datum'}{form.imageCount ? ` · ${form.imageCount} bilder` : ''}</small></div><div className="archive-actions"><a href={form.url}>Öppna</a><button type="button" onClick={() => removeSavedForm(form.id)}>Radera</button></div></article>)}</div> : <div className="archive-empty"><b>Det finns inga sparade formulär.</b><span>En kopia skapas automatiskt när du genererar en PDF.</span></div>}</section></div>}
     <div className="progress-wrap"><div className="progress-meta"><span>Steg {step} av {stepNames.length}</span><b>{stepNames[step - 1]}</b><span>{Math.round(step / stepNames.length * 100)} %</span></div><div className="progress"><span style={{ width: `${step / stepNames.length * 100}%` }} /></div></div>
     <main>
@@ -182,6 +194,31 @@ export default function App() {
     </main>
     <footer>Sevelund AB · Uppgifterna sparas endast i denna webbläsare</footer>
   </>
+}
+
+function PasswordGate({ title, description, onUnlock }: { title: string; description: string; onUnlock: (password: string) => Promise<boolean> }) {
+  return <div className="password-page"><PasswordCard title={title} description={description} onUnlock={onUnlock} /></div>
+}
+
+function PasswordCard({ title, description, onUnlock, onClose }: { title: string; description: string; onUnlock: (password: string) => Promise<boolean>; onClose?: () => void }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [working, setWorking] = useState(false)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setWorking(true); setError('')
+    const accepted = await onUnlock(password)
+    if (!accepted) { setError('Fel lösenord. Försök igen.'); setPassword('') }
+    setWorking(false)
+  }
+  return <section className="password-card" role={onClose ? 'dialog' : undefined} aria-modal={onClose ? 'true' : undefined} aria-labelledby="password-title">
+    {onClose && <button type="button" className="password-close" aria-label="Stäng" onClick={onClose}>×</button>}
+    <div className="password-brand"><span className="mark">S</span><strong>Sevelund AB</strong></div>
+    <h1 id="password-title">{title}</h1><p>{description}</p>
+    <form onSubmit={submit}><label htmlFor="password">Lösenord</label><input id="password" type="password" autoComplete="current-password" autoFocus value={password} onChange={e => setPassword(e.target.value)} />
+      {error && <div className="password-error" role="alert">{error}</div>}
+      <button type="submit" disabled={!password || working}>{working ? 'Kontrollerar…' : 'Öppna'}</button>
+    </form>
+  </section>
 }
 
 function Compactor({ title, active, setActive, days, setDays, ownershipValue, setOwnership, comment, setComment }: { title: string; active: boolean; setActive: (v: boolean) => void; days: number; setDays: (v: number) => void; ownershipValue: string; setOwnership: (v: string) => void; comment: string; setComment: (v: string) => void }) {
