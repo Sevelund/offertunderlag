@@ -3,19 +3,20 @@ import type { ChangeEvent } from 'react'
 import type { FormData, ProjectImage } from './types'
 import { conditions, equipmentTypes, excavatorSizes, massTypes, materialTypes, otherMaterialTypes, units, workTypes } from './constants'
 import { blankEquipment, blankExcavator, blankMachine, blankMassOut, blankMaterialIn, blankOtherMaterial, createInitialData, id } from './defaults'
-import { getStepErrors, isComplete } from './validation'
+import { canAdvance, getStepErrors, isComplete } from './validation'
 import { compressImage } from './image'
 import { generatePdf } from './pdf'
 import { Field, RepeaterCard, Section, YesNo } from './components'
+import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, loadArchivedForm, saveArchivedForm, type SavedArchive } from './archive'
 
-const STORAGE_KEY = 'sevelund-offertunderlag-v1'
 const stepNames = ['Grunduppgifter', 'Omfattning', 'Grävmaskin', 'Dumper och hjullastare', 'Padda och utrustning', 'Material till platsen', 'Massor från platsen', 'Övrigt material', 'Syfte', 'Genomförande', 'Förutsättningar', 'Övrig information', 'Bilder', 'Sammanställning']
 const num = (value: string) => Number(value) || 0
 
 function loadData(): FormData {
   const initial = createInitialData()
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const archived = archiveIdFromUrl() ? loadArchivedForm(archiveIdFromUrl()) : null
+    const saved = archived ? JSON.stringify(archived) : localStorage.getItem(ACTIVE_STORAGE_KEY)
     if (!saved) return initial
     const parsed = JSON.parse(saved) as Partial<FormData>
     return { ...initial, ...parsed, conditions: { ...initial.conditions, ...(parsed.conditions || {}) } }
@@ -25,6 +26,10 @@ function loadData(): FormData {
 export default function App() {
   const [data, setData] = useState<FormData>(loadData)
   const [step, setStep] = useState(1)
+  const [archiveId, setArchiveId] = useState(archiveIdFromUrl)
+  const [lastSaved, setLastSaved] = useState<SavedArchive | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [showStepErrors, setShowStepErrors] = useState(false)
   const [storageError, setStorageError] = useState('')
   const [pdfError, setPdfError] = useState('')
   const [working, setWorking] = useState(false)
@@ -36,15 +41,19 @@ export default function App() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); setStorageError('') }
+      try { localStorage.setItem(archiveId ? archiveKey(archiveId) : ACTIVE_STORAGE_KEY, JSON.stringify(data)); setStorageError('') }
       catch { setStorageError('Formuläret är för stort för lokal lagring. Ta bort någon bild innan du stänger sidan.') }
     }, 250)
     return () => window.clearTimeout(timer)
-  }, [data])
+  }, [data, archiveId])
 
-  const go = (next: number) => { setStep(Math.max(1, Math.min(stepNames.length, next))); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const go = (next: number) => { setShowStepErrors(false); setStep(Math.max(1, Math.min(stepNames.length, next))); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const nextStep = () => {
+    if (!canAdvance(data, step)) { setShowStepErrors(true); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    go(step + 1)
+  }
   const toggleWorkType = (value: string) => set('workTypes', data.workTypes.includes(value) ? data.workTypes.filter(x => x !== value) : [...data.workTypes, value])
-  const reset = () => { if (confirm('Vill du radera alla sparade uppgifter och börja om? Detta går inte att ångra.')) { localStorage.removeItem(STORAGE_KEY); setData(createInitialData()); setStep(1) } }
+  const reset = () => { if (confirm('Vill du radera alla uppgifter i det öppna formuläret och börja om? Detta går inte att ångra.')) { localStorage.removeItem(archiveId ? archiveKey(archiveId) : ACTIVE_STORAGE_KEY); history.replaceState({}, '', `${location.origin}${location.pathname}`); setArchiveId(''); setLastSaved(null); setData(createInitialData()); setStep(1) } }
   const addImages = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     if (!files.length) return
@@ -59,8 +68,28 @@ export default function App() {
   const makePdf = async () => {
     if (!isComplete(data)) return
     setWorking(true); setPdfError('')
-    try { await generatePdf(data) } catch { setPdfError('PDF-filen kunde inte skapas. Prova igen eller ta bort någon stor bild.') }
+    try {
+      await generatePdf(data)
+      let saved: SavedArchive
+      if (archiveId) {
+        localStorage.setItem(archiveKey(archiveId), JSON.stringify(data))
+        const url = new URL(location.href); url.search = ''; url.hash = ''; url.searchParams.set('underlag', archiveId)
+        saved = { id: archiveId, url: url.toString() }
+      } else {
+        const activeBackup = localStorage.getItem(ACTIVE_STORAGE_KEY)
+        localStorage.removeItem(ACTIVE_STORAGE_KEY)
+        try { saved = saveArchivedForm(data) }
+        catch (error) { if (activeBackup) localStorage.setItem(ACTIVE_STORAGE_KEY, activeBackup); throw error }
+      }
+      history.replaceState({}, '', `${location.origin}${location.pathname}`)
+      setArchiveId(''); setLastSaved(saved); setCopied(false); setData(createInitialData()); setStep(1); setShowStepErrors(false)
+    } catch { setPdfError('PDF-filen eller den sparade kopian kunde inte skapas. Prova igen eller ta bort någon stor bild.') }
     finally { setWorking(false) }
+  }
+  const copySavedUrl = async () => {
+    if (!lastSaved) return
+    try { await navigator.clipboard.writeText(lastSaved.url); setCopied(true) }
+    catch { setPdfError('Webbadressen kunde inte kopieras automatiskt. Öppna länken och kopiera adressen från webbläsaren.') }
   }
 
   const ownership = (value: string, onChange: (v: string) => void) => <select value={value} onChange={e => onChange(e.target.value)}><option>Egen</option><option>Hyrd</option></select>
@@ -77,6 +106,8 @@ export default function App() {
     <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><button type="button" className="ghost danger" onClick={reset}>Rensa formuläret</button></header>
     <div className="progress-wrap"><div className="progress-meta"><span>Steg {step} av {stepNames.length}</span><b>{stepNames[step - 1]}</b><span>{Math.round(step / stepNames.length * 100)} %</span></div><div className="progress"><span style={{ width: `${step / stepNames.length * 100}%` }} /></div></div>
     <main>
+      {archiveId && <div className="alert info">Du arbetar i en sparad kopia. Ändringar sparas automatiskt till kopians webbadress.</div>}
+      {lastSaved && <div className="saved-copy"><div><b>PDF-filen är skapad och formuläret har rensats.</b><span>En lokal kopia finns kvar och kan öppnas igen på den här enheten.</span></div><div className="saved-actions"><a href={lastSaved.url}>Öppna sparad kopia</a><button type="button" onClick={copySavedUrl}>{copied ? 'Webbadressen är kopierad' : 'Kopiera webbadress'}</button></div></div>}
       {storageError && <div className="alert error">{storageError}</div>}
       {pdfError && <div className="alert error">{pdfError}</div>}
 
@@ -132,8 +163,8 @@ export default function App() {
 
       {step === 14 && <Section title="Sammanställning" intro="Kontrollera uppgifterna innan PDF-filen skapas."><div className="summary">{summaryRows.map(([label, value]) => <div key={label}><span>{label}</span><b>{value}</b></div>)}</div>{Object.keys(errors).length > 0 ? <div className="missing"><h3>Obligatoriska uppgifter saknas</h3>{Object.entries(errors).map(([s, list]) => <button type="button" key={s} onClick={() => go(Number(s))}><b>Steg {s}: {stepNames[Number(s) - 1]}</b><span>{list.join('. ')}</span></button>)}</div> : <div className="alert success">Alla obligatoriska uppgifter är ifyllda.</div>}<button type="button" className="pdf" disabled={!isComplete(data) || working} onClick={makePdf}>{working ? 'Skapar PDF…' : 'Generera PDF'}</button><p className="privacy">PDF-filen skapas lokalt på enheten. Inga formulärsvar eller bilder skickas till någon extern tjänst.</p></Section>}
 
-      {errors[step]?.length > 0 && step < 14 && <div className="step-errors"><b>Kontrollera detta steg:</b><ul>{errors[step].map(x => <li key={x}>{x}</li>)}</ul></div>}
-      <nav className="nav"><button type="button" className="secondary" disabled={step === 1} onClick={() => go(step - 1)}>← Föregående</button>{step < stepNames.length && <button type="button" className="primary" onClick={() => go(step + 1)}>Nästa →</button>}</nav>
+      {showStepErrors && errors[step]?.length > 0 && step < 14 && <div className="step-errors"><b>Fyll i följande innan du går vidare:</b><ul>{errors[step].map(x => <li key={x}>{x}</li>)}</ul></div>}
+      <nav className="nav"><button type="button" className="secondary" disabled={step === 1} onClick={() => go(step - 1)}>← Föregående</button>{step < stepNames.length && <button type="button" className="primary" onClick={nextStep}>Nästa →</button>}</nav>
     </main>
     <footer>Sevelund AB · Uppgifterna sparas endast i denna webbläsare</footer>
   </>

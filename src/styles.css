@@ -62,6 +62,14 @@ textarea.large { min-height: 180px; }
 .alert { border-radius: 10px; padding: 14px 16px; margin: 0 0 18px; }
 .alert.error, .step-errors { background: #fff3f1; border: 1px solid #e6b5b0; color: #78241d; }
 .alert.success { background: #edf6ef; border: 1px solid #b4d3bc; color: #285c35; margin-top: 22px; }
+.alert.info { background: #edf3f6; border: 1px solid #b7cbd4; color: #244e61; }
+.saved-copy { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 18px; margin-bottom: 18px; border-radius: 12px; background: #edf6ef; border: 1px solid #b4d3bc; color: #285c35; }
+.saved-copy b, .saved-copy span { display: block; }
+.saved-copy span { margin-top: 4px; font-size: 14px; }
+.saved-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.saved-actions a, .saved-actions button { min-height: 43px; display: inline-flex; align-items: center; justify-content: center; padding: 9px 12px; border-radius: 8px; font-weight: 750; text-decoration: none; }
+.saved-actions a { background: var(--green); color: white; border: 1px solid var(--green); }
+.saved-actions button { background: white; color: var(--green); border: 1px solid #94ac9c; }
 .step-errors { border-radius: 12px; padding: 16px 20px; margin-top: 16px; }
 .step-errors ul { margin-bottom: 0; }
 .pdf { width: 100%; min-height: 58px; margin-top: 18px; border: 0; border-radius: 11px; color: white; background: var(--green); font-size: 17px; font-weight: 800; }
@@ -86,6 +94,8 @@ footer { text-align: center; color: #6d7772; padding: 20px; font-size: 13px; }
   .checkbox-grid, .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .segmented { max-width: none; }
   .summary > div { grid-template-columns: 1fr; gap: 4px; }
+  .saved-copy { align-items: stretch; flex-direction: column; }
+  .saved-actions > * { flex: 1; }
   .nav button { min-width: 0; flex: 1; padding-inline: 10px; }
 }
 @media print { .topbar, .progress-wrap, .nav, footer { display: none; } main { width: 100%; margin: 0; } .step-card { box-shadow: none; } }

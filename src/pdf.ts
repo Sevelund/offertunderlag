@@ -36,7 +36,7 @@ export const buildStructuredSummary = (d: FormData) => ({
   bilder: d.images.map((x, i) => ({ nummer: i + 1, filnamn: x.name, bildtext: x.caption })),
 })
 
-export async function generatePdf(d: FormData) {
+export function createPdfDocument(d: FormData) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
   const margin = 15
   let y = 18
@@ -57,6 +57,13 @@ export async function generatePdf(d: FormData) {
     autoTable(doc, { startY: y, head: [headers], body: rows, margin: { left: margin, right: margin },
       styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.3, overflow: 'linebreak' },
       headStyles: { fillColor: [25, 53, 45], textColor: 255 }, alternateRowStyles: { fillColor: [241, 244, 240] },
+      rowPageBreak: 'avoid', showHead: 'everyPage' })
+    y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || y) + 6
+  }
+  const dataTable = (headers: string[], rows: string[][]) => {
+    autoTable(doc, { startY: y, head: [headers], body: rows.length ? rows : [['Ej aktuellt', ...headers.slice(1).map(() => '')]], margin: { left: margin, right: margin },
+      styles: { font: 'helvetica', fontSize: 7.8, cellPadding: 2.1, overflow: 'linebreak' },
+      headStyles: { fillColor: [45, 91, 76], textColor: 255 }, alternateRowStyles: { fillColor: [241, 244, 240] },
       rowPageBreak: 'avoid', showHead: 'everyPage' })
     y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || y) + 6
   }
@@ -110,10 +117,38 @@ export async function generatePdf(d: FormData) {
     } catch { paragraph(`Bild ${i + 1} kunde inte infogas: ${img.caption || img.name}`) }
   }
   heading('STRUKTURERAD SAMMANSTÄLLNING FÖR OFFERTGENERERING')
-  paragraph('Format: JSON. Bilddata är utelämnad; bildnummer och bildtexter finns med.')
-  const jsonLines = doc.splitTextToSize(JSON.stringify(buildStructuredSummary(d), null, 2), 180)
-  doc.setFont('courier', 'normal'); doc.setFontSize(7.3)
-  for (const line of jsonLines) { ensure(4); doc.text(line, margin, y); y += 3.4 }
+  paragraph('Samtliga uppgifter presenteras nedan i ett konsekvent och lättläst format. Avsnittet kan användas som underlag när kundofferten skapas.')
+  heading('Grunddata och tidsåtgång', 2)
+  table([
+    ['Kund', text(d.customerName)], ['Adress', text(d.address)], ['Projekt', text(d.projectName)],
+    ['Arbetstyper', d.workTypes.map(x => x === 'Annat' ? d.otherWorkType : x).join(', ')],
+    ['Beräknade arbetsdagar', text(d.totalDays)], ['Bedömningens säkerhet', text(d.certainty)],
+    ['Osäkerheter', d.uncertainty || 'Inga angivna'],
+  ])
+  heading('Personal', 2)
+  dataTable(['Period', 'Antal personer', 'Antal dagar'], d.personnel.map((x, i) => [String(i + 1), String(x.people), String(x.days)]))
+  heading('Grävmaskiner', 2)
+  dataTable(['Maskin', 'Storlek', 'Dagar', 'Egen/hyrd', 'Transport'], d.needsExcavator ? d.excavators.map((x, i) => [`Grävmaskin ${i + 1}`, titled(x.size, x.customSize, 'Annan storlek'), String(x.days), x.ownership, `Till: ${yn(x.transportTo)}, från: ${yn(x.transportFrom)}${x.comment ? `. ${x.comment}` : ''}`]) : [])
+  heading('Dumper och hjullastare', 2)
+  dataTable(['Typ', 'Storlek/modell', 'Dagar', 'Egen/hyrd', 'Transport'], d.machines.map(x => [x.type, x.size, String(x.days), x.ownership, `Till: ${yn(x.transportTo)}, från: ${yn(x.transportFrom)}${x.comment ? `. ${x.comment}` : ''}`]))
+  heading('Paddor och övrig utrustning', 2)
+  const equipmentSummary: string[][] = []
+  if (d.smallCompactor) equipmentSummary.push(['Liten padda', '-', String(d.smallCompactorDays), d.smallCompactorOwnership, d.smallCompactorComment])
+  if (d.largeCompactor) equipmentSummary.push(['Stor padda', '-', String(d.largeCompactorDays), d.largeCompactorOwnership, d.largeCompactorComment])
+  d.equipment.forEach(x => equipmentSummary.push([titled(x.type, x.customType), x.size || '-', String(x.days), x.ownership, `Antal: ${x.quantity}. Transport: ${yn(x.transport)}${x.comment ? `. ${x.comment}` : ''}`]))
+  dataTable(['Utrustning', 'Storlek/modell', 'Dagar', 'Egen/hyrd', 'Kommentar'], equipmentSummary)
+  heading('Material till arbetsplatsen', 2)
+  dataTable(['Material', 'Mängd', 'Enhet', 'Leveranser', 'Leverans och placering'], d.materialsIn.map(x => [titled(x.type, x.customType), String(x.quantity), x.unit, String(x.deliveries), `${x.deliveryMethod}. ${x.placement || 'Placering ej angiven'}${x.comment ? `. ${x.comment}` : ''}`]))
+  heading('Massor från arbetsplatsen', 2)
+  dataTable(['Typ', 'Mängd', 'Enhet', 'Lass', 'Förorening och mottagning'], d.massesOut.map(x => [titled(x.type, x.customType), String(x.quantity), x.unit, String(x.loads), `Förorening: ${x.contamination}. Mottagning: ${x.destination || 'ej angiven'}${x.comment ? `. ${x.comment}` : ''}`]))
+  heading('Övrigt material', 2)
+  dataTable(['Material', 'Mängd', 'Enhet', 'Specifikation', 'Kommentar'], d.otherMaterials.map(x => [titled(x.material, x.customMaterial), String(x.quantity), x.unit, x.specification || '-', x.comment || '-']))
+  heading('Arbetsmoment', 2)
+  dataTable(['Ordning', 'Beskrivning'], d.workMoments.map((x, i) => [String(i + 1), x.description]))
+  heading('Förutsättningar och osäkerheter', 2)
+  dataTable(['Förutsättning', 'Svar', 'Kommentar'], conditions.map(([key, label]) => [label, d.conditions[key].answer, d.conditions[key].comment || '-']))
+  heading('Syfte och övrig information', 2)
+  table([['Färdigt resultat', d.purpose], ['Övergripande genomförande', d.executionOverview || 'Ej angivet'], ['Övrig viktig information', d.additionalInfo || 'Ej angivet'], ['Bilder', d.images.length ? d.images.map((x, i) => `Bild ${i + 1}: ${x.caption || x.name}`).join('; ') : 'Inga bilder']])
 
   const pageCount = doc.getNumberOfPages()
   for (let p = 1; p <= pageCount; p++) {
@@ -122,5 +157,10 @@ export async function generatePdf(d: FormData) {
     doc.text(`Sida ${p} av ${pageCount}`, 195, 291, { align: 'right' })
   }
   const slug = safeFileName(d.projectName || d.address)
-  doc.save(`offertunderlag-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`)
+  return { doc, filename: `offertunderlag-${slug}-${new Date().toISOString().slice(0, 10)}.pdf` }
+}
+
+export async function generatePdf(d: FormData) {
+  const { doc, filename } = createPdfDocument(d)
+  doc.save(filename)
 }

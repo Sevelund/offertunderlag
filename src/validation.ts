@@ -28,3 +28,5 @@ export const getStepErrors = (data: FormData): Record<number, string[]> => {
 }
 
 export const isComplete = (data: FormData) => Object.keys(getStepErrors(data)).length === 0
+
+export const canAdvance = (data: FormData, step: number) => !(getStepErrors(data)[step]?.length)
