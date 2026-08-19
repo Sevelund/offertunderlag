@@ -1,0 +1,49 @@
+name: Publicera på GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hämta koden
+        uses: actions/checkout@v4
+      - name: Installera Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installera beroenden
+        run: npm ci
+      - name: Kör tester
+        run: npm test
+      - name: Bygg webbplatsen
+        run: npm run build
+      - name: Konfigurera GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Ladda upp webbplatsen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Publicera
+        id: deployment
+        uses: actions/deploy-pages@v4
