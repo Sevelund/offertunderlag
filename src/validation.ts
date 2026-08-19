@@ -4,7 +4,6 @@ import { conditions } from './constants'
 export const getStepErrors = (data: FormData): Record<number, string[]> => {
   const e: Record<number, string[]> = {}
   const add = (step: number, message: string) => { (e[step] ||= []).push(message) }
-  if (!data.customerName.trim()) add(1, 'Kundens namn saknas')
   if (!data.address.trim()) add(1, 'Arbetsplatsens adress saknas')
   if (!data.assessmentDate) add(1, 'Datum för bedömningen saknas')
   if (!data.assessor) add(1, 'Vem som gjort bedömningen saknas')

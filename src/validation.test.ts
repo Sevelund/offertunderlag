@@ -16,7 +16,8 @@ describe('formulärvalidering', () => {
   it('visar obligatoriska fel för ett nytt formulär', () => { expect(Object.keys(getStepErrors(createInitialData())).length).toBeGreaterThan(0) })
   it('godkänner ett komplett minimiunderlag', () => { expect(isComplete(completeData())).toBe(true) })
   it('kräver kommentar när tidsuppskattningen är osäker', () => { const d = completeData(); d.certainty = 'Mycket osäker'; expect(getStepErrors(d)[2]).toContain('Beskriv osäkerheten') })
-  it('stoppar nästa steg när aktuellt steg har fel', () => { const d = completeData(); d.customerName = ''; expect(canAdvance(d, 1)).toBe(false); expect(canAdvance(d, 2)).toBe(true) })
+  it('stoppar nästa steg när aktuellt steg har fel', () => { const d = completeData(); d.address = ''; expect(canAdvance(d, 1)).toBe(false); expect(canAdvance(d, 2)).toBe(true) })
+  it('tillåter att kundens namn lämnas tomt', () => { const d = completeData(); d.customerName = ''; expect(getStepErrors(d)[1]).toBeUndefined() })
 })
 
 describe('PDF-underlag', () => {
