@@ -7,7 +7,7 @@ import { canAdvance, getStepErrors, isComplete } from './validation'
 import { compressImage } from './image'
 import { generatePdf } from './pdf'
 import { Field, RepeaterCard, Section, YesNo } from './components'
-import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, loadArchivedForm, saveArchivedForm, type SavedArchive } from './archive'
+import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, deleteArchivedForm, listArchivedForms, loadArchivedForm, saveArchivedForm, type SavedArchive } from './archive'
 
 const stepNames = ['Grunduppgifter', 'Omfattning', 'Grävmaskin', 'Dumper och hjullastare', 'Padda och utrustning', 'Material till platsen', 'Massor från platsen', 'Övrigt material', 'Syfte', 'Genomförande', 'Förutsättningar', 'Övrig information', 'Bilder', 'Sammanställning']
 const num = (value: string) => Number(value) || 0
@@ -28,6 +28,8 @@ export default function App() {
   const [step, setStep] = useState(1)
   const [archiveId, setArchiveId] = useState(archiveIdFromUrl)
   const [lastSaved, setLastSaved] = useState<SavedArchive | null>(null)
+  const [savedForms, setSavedForms] = useState(listArchivedForms)
+  const [showArchives, setShowArchives] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showStepErrors, setShowStepErrors] = useState(false)
   const [storageError, setStorageError] = useState('')
@@ -53,7 +55,12 @@ export default function App() {
     go(step + 1)
   }
   const toggleWorkType = (value: string) => set('workTypes', data.workTypes.includes(value) ? data.workTypes.filter(x => x !== value) : [...data.workTypes, value])
-  const reset = () => { if (confirm('Vill du radera alla uppgifter i det öppna formuläret och börja om? Detta går inte att ångra.')) { localStorage.removeItem(archiveId ? archiveKey(archiveId) : ACTIVE_STORAGE_KEY); history.replaceState({}, '', `${location.origin}${location.pathname}`); setArchiveId(''); setLastSaved(null); setData(createInitialData()); setStep(1) } }
+  const reset = () => {
+    if (!confirm('Vill du radera alla uppgifter i det öppna formuläret och börja om? Detta går inte att ångra.')) return
+    localStorage.removeItem(archiveId ? archiveKey(archiveId) : ACTIVE_STORAGE_KEY)
+    history.replaceState({}, '', `${location.origin}${location.pathname}`)
+    setArchiveId(''); setLastSaved(null); setSavedForms(listArchivedForms()); setData(createInitialData()); setStep(1)
+  }
   const addImages = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     if (!files.length) return
@@ -82,7 +89,7 @@ export default function App() {
         catch (error) { if (activeBackup) localStorage.setItem(ACTIVE_STORAGE_KEY, activeBackup); throw error }
       }
       history.replaceState({}, '', `${location.origin}${location.pathname}`)
-      setArchiveId(''); setLastSaved(saved); setCopied(false); setData(createInitialData()); setStep(1); setShowStepErrors(false)
+      setArchiveId(''); setLastSaved(saved); setSavedForms(listArchivedForms()); setCopied(false); setData(createInitialData()); setStep(1); setShowStepErrors(false)
     } catch { setPdfError('PDF-filen eller den sparade kopian kunde inte skapas. Prova igen eller ta bort någon stor bild.') }
     finally { setWorking(false) }
   }
@@ -90,6 +97,12 @@ export default function App() {
     if (!lastSaved) return
     try { await navigator.clipboard.writeText(lastSaved.url); setCopied(true) }
     catch { setPdfError('Webbadressen kunde inte kopieras automatiskt. Öppna länken och kopiera adressen från webbläsaren.') }
+  }
+  const removeSavedForm = (id: string) => {
+    if (!confirm('Vill du radera det sparade formuläret? Detta går inte att ångra.')) return
+    deleteArchivedForm(id)
+    setSavedForms(listArchivedForms())
+    if (lastSaved?.id === id) setLastSaved(null)
   }
 
   const ownership = (value: string, onChange: (v: string) => void) => <select value={value} onChange={e => onChange(e.target.value)}><option>Egen</option><option>Hyrd</option></select>
@@ -103,7 +116,8 @@ export default function App() {
   ]
 
   return <>
-    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><button type="button" className="ghost danger" onClick={reset}>Rensa formuläret</button></header>
+    <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={() => { setSavedForms(listArchivedForms()); setShowArchives(true) }}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost danger" onClick={reset}>Rensa formuläret</button></div></header>
+    {showArchives && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowArchives(false) }}><section className="archive-modal" role="dialog" aria-modal="true" aria-labelledby="archive-title"><div className="archive-head"><div><h2 id="archive-title">Sparade formulär</h2><p>Formulären finns endast i den här webbläsaren på den här enheten.</p></div><button type="button" aria-label="Stäng" onClick={() => setShowArchives(false)}>×</button></div>{savedForms.length ? <div className="archive-list">{savedForms.map(form => <article className="archive-row" key={form.id}><div><b>{form.address || 'Adress saknas'}</b><span>{form.customerName || 'Kundnamn saknas'} · Bedömning {form.assessmentDate || 'datum saknas'}</span><small>Sparad {form.savedDate || 'okänt datum'}{form.imageCount ? ` · ${form.imageCount} bilder` : ''}</small></div><div className="archive-actions"><a href={form.url}>Öppna</a><button type="button" onClick={() => removeSavedForm(form.id)}>Radera</button></div></article>)}</div> : <div className="archive-empty"><b>Det finns inga sparade formulär.</b><span>En kopia skapas automatiskt när du genererar en PDF.</span></div>}</section></div>}
     <div className="progress-wrap"><div className="progress-meta"><span>Steg {step} av {stepNames.length}</span><b>{stepNames[step - 1]}</b><span>{Math.round(step / stepNames.length * 100)} %</span></div><div className="progress"><span style={{ width: `${step / stepNames.length * 100}%` }} /></div></div>
     <main>
       {archiveId && <div className="alert info">Du arbetar i en sparad kopia. Ändringar sparas automatiskt till kopians webbadress.</div>}
