@@ -14,7 +14,7 @@ export const safeFileName = (value: string) => value
 
 export const buildStructuredSummary = (d: FormData) => ({
   grunduppgifter: {
-    kund: d.customerName, adress: d.address, projekt: d.projectName, bedomningsdatum: d.assessmentDate,
+    kund: d.customerName, adress: d.address, bedomningsdatum: d.assessmentDate,
     bedomare: d.assessor === 'Annan' ? d.otherAssessor : d.assessor,
     arbetstyper: d.workTypes.map(x => x === 'Annat' ? d.otherWorkType : x),
   },
@@ -74,7 +74,7 @@ export function createPdfDocument(d: FormData) {
   y = 45; doc.setTextColor(35, 40, 38)
 
   heading('1. Grunduppgifter')
-  table([['Kund', text(d.customerName)], ['Arbetsplats', text(d.address)], ['Projekt', text(d.projectName)], ['Bedömningsdatum', text(d.assessmentDate)], ['Bedömare', d.assessor === 'Annan' ? text(d.otherAssessor) : text(d.assessor)], ['Typ av arbete', d.workTypes.map(x => x === 'Annat' ? d.otherWorkType : x).join(', ')]])
+  table([['Kund', text(d.customerName)], ['Arbetsplats', text(d.address)], ['Bedömningsdatum', text(d.assessmentDate)], ['Bedömare', d.assessor === 'Annan' ? text(d.otherAssessor) : text(d.assessor)], ['Typ av arbete', d.workTypes.map(x => x === 'Annat' ? d.otherWorkType : x).join(', ')]])
   heading('2. Arbetets omfattning')
   table([['Beräknad total tid', `${d.totalDays} arbetsdagar`], ['Tidsuppskattning', text(d.certainty)], ['Osäkerhet', d.uncertainty || 'Ingen angiven']])
   heading('3. Personal och beräknad tidsåtgång')
@@ -120,7 +120,7 @@ export function createPdfDocument(d: FormData) {
   paragraph('Samtliga uppgifter presenteras nedan i ett konsekvent och lättläst format. Avsnittet kan användas som underlag när kundofferten skapas.')
   heading('Grunddata och tidsåtgång', 2)
   table([
-    ['Kund', text(d.customerName)], ['Adress', text(d.address)], ['Projekt', text(d.projectName)],
+    ['Kund', text(d.customerName)], ['Adress', text(d.address)],
     ['Arbetstyper', d.workTypes.map(x => x === 'Annat' ? d.otherWorkType : x).join(', ')],
     ['Beräknade arbetsdagar', text(d.totalDays)], ['Bedömningens säkerhet', text(d.certainty)],
     ['Osäkerheter', d.uncertainty || 'Inga angivna'],
@@ -156,7 +156,7 @@ export function createPdfDocument(d: FormData) {
     doc.text(`Skapad ${new Date().toLocaleString('sv-SE')}`, margin, 291)
     doc.text(`Sida ${p} av ${pageCount}`, 195, 291, { align: 'right' })
   }
-  const slug = safeFileName(d.projectName || d.address)
+  const slug = safeFileName(d.address)
   return { doc, filename: `offertunderlag-${slug}-${new Date().toISOString().slice(0, 10)}.pdf` }
 }
 

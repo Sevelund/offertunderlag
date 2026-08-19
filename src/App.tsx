@@ -94,7 +94,7 @@ export default function App() {
 
   const ownership = (value: string, onChange: (v: string) => void) => <select value={value} onChange={e => onChange(e.target.value)}><option>Egen</option><option>Hyrd</option></select>
   const summaryRows = [
-    ['Kund', data.customerName], ['Arbetsplats', data.address], ['Projekt', data.projectName || 'Ej angivet'],
+    ['Kund', data.customerName], ['Arbetsplats', data.address],
     ['Arbetstyp', data.workTypes.map(x => x === 'Annat' ? data.otherWorkType : x).join(', ')],
     ['Tid', `${data.totalDays} dagar`], ['Personalperioder', data.personnel.map(x => `${x.people} personer × ${x.days} dagar`).join('; ')],
     ['Grävmaskin', data.needsExcavator ? `${data.excavators.length} st` : 'Nej'], ['Dumper/hjullastare', data.loaderChoice],
@@ -112,7 +112,7 @@ export default function App() {
       {pdfError && <div className="alert error">{pdfError}</div>}
 
       {step === 1 && <Section title="Grunduppgifter" intro="Uppgifter om kunden, platsen och bedömningen.">
-        <div className="grid two"><Field label="Kundens namn" required><input value={data.customerName} onChange={e => set('customerName', e.target.value)} /></Field><Field label="Arbetsplatsens adress" required><input value={data.address} onChange={e => set('address', e.target.value)} /></Field><Field label="Projektnamn eller kort benämning"><input value={data.projectName} onChange={e => set('projectName', e.target.value)} /></Field><Field label="Datum för bedömningen" required><input type="date" value={data.assessmentDate} onChange={e => set('assessmentDate', e.target.value)} /></Field></div>
+        <div className="grid two"><Field label="Kundens namn" required><input value={data.customerName} onChange={e => set('customerName', e.target.value)} /></Field><Field label="Arbetsplatsens adress" required><input value={data.address} onChange={e => set('address', e.target.value)} /></Field><Field label="Datum för bedömningen" required><input type="date" value={data.assessmentDate} onChange={e => set('assessmentDate', e.target.value)} /></Field></div>
         <Field label="Vem har gjort bedömningen?" required><div className="choice-grid">{['Adam', 'Karl', 'Annan'].map(x => <button type="button" key={x} className={data.assessor === x ? 'choice active' : 'choice'} onClick={() => set('assessor', x)}>{x}</button>)}</div></Field>
         {data.assessor === 'Annan' && <Field label="Namn på bedömare" required><input value={data.otherAssessor} onChange={e => set('otherAssessor', e.target.value)} /></Field>}
         <Field label="Vilken typ av arbete gäller det?" required hint="Flera val är möjliga."><div className="checkbox-grid">{workTypes.map(x => <label className={data.workTypes.includes(x) ? 'check active' : 'check'} key={x}><input type="checkbox" checked={data.workTypes.includes(x)} onChange={() => toggleWorkType(x)} />{x}</label>)}</div></Field>
