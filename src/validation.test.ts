@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialData } from './defaults'
+import { blankExcavator, createInitialData } from './defaults'
 import { canAdvance, getStepErrors, isComplete } from './validation'
 import { conditions } from './constants'
 import { buildStructuredSummary, safeFileName } from './pdf'
@@ -13,6 +13,13 @@ const completeData = () => {
 }
 
 describe('formulärvalidering', () => {
+  it('använder rätt förvalda personal- och maskinval', () => {
+    const d = createInitialData()
+    expect(d.personnel[0].people).toBe(1)
+    expect(blankExcavator().ownership).toBe('Egen')
+    expect(d.smallCompactorOwnership).toBe('Hyrd')
+    expect(d.largeCompactorOwnership).toBe('Hyrd')
+  })
   it('visar obligatoriska fel för ett nytt formulär', () => { expect(Object.keys(getStepErrors(createInitialData())).length).toBeGreaterThan(0) })
   it('godkänner ett komplett minimiunderlag', () => { expect(isComplete(completeData())).toBe(true) })
   it('kräver kommentar när tidsuppskattningen är osäker', () => { const d = completeData(); d.certainty = 'Mycket osäker'; expect(getStepErrors(d)[2]).toContain('Beskriv osäkerheten') })
