@@ -25,6 +25,7 @@ describe('formulärvalidering', () => {
   it('kräver kommentar när tidsuppskattningen är osäker', () => { const d = completeData(); d.certainty = 'Mycket osäker'; expect(getStepErrors(d)[2]).toContain('Beskriv osäkerheten') })
   it('stoppar nästa steg när aktuellt steg har fel', () => { const d = completeData(); d.address = ''; expect(canAdvance(d, 1)).toBe(false); expect(canAdvance(d, 2)).toBe(true) })
   it('tillåter att kundens namn lämnas tomt', () => { const d = completeData(); d.customerName = ''; expect(getStepErrors(d)[1]).toBeUndefined() })
+  it('tillåter att arbetsmoment lämnas tomma', () => { const d = completeData(); d.workMoments = []; expect(getStepErrors(d)[10]).toBeUndefined() })
   it('avvisar halvdagar i samtliga dagfält', () => {
     const d = completeData(); d.totalDays = 1.5; d.personnel[0].days = 2.5
     expect(getStepErrors(d)[2]).toEqual(expect.arrayContaining(['Beräknad arbetstid måste anges i hela dagar', 'Personalperioderna måste anges med hela dagar']))

@@ -23,7 +23,7 @@ export const getStepErrors = (data: FormData): Record<number, string[]> => {
   if (data.massOutNeeded && (!data.massesOut.length || data.massesOut.some(x => !x.type || x.quantity <= 0 || !x.unit))) add(7, 'Fyll i alla massor som ska köras bort')
   if (data.otherMaterialNeeded && (!data.otherMaterials.length || data.otherMaterials.some(x => !x.material || x.quantity <= 0 || !x.unit))) add(8, 'Fyll i allt övrigt material')
   if (!data.purpose.trim()) add(9, 'Beskriv syftet och det färdiga resultatet')
-  if (!data.workMoments.length || data.workMoments.some(x => !x.description.trim())) add(10, 'Lägg till minst ett komplett arbetsmoment')
+  if (data.workMoments.some(x => !x.description.trim())) add(10, 'Fyll i eller ta bort tomma arbetsmoment')
   conditions.forEach(([key, label]) => { if (!data.conditions[key]?.answer) add(11, `Besvara: ${label}`) })
   return e
 }

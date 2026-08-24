@@ -98,7 +98,7 @@ export function createPdfDocument(d: FormData) {
   table(d.otherMaterialNeeded ? d.otherMaterials.map((x, i) => [`${i + 1}. ${titled(x.material, x.customMaterial)}`, `${x.quantity} ${x.unit}; ${x.specification || 'ingen specifikation'}${x.comment ? `; ${x.comment}` : ''}`]) : [['Övrigt material', 'Nej']])
   heading('8. Syftet med arbetet'); paragraph(d.purpose)
   heading('9. Planerat genomförande')
-  table(d.workMoments.map((x, i) => [`${i + 1}`, x.description]), ['Ordning', 'Arbetsmoment'])
+  table(d.workMoments.length ? d.workMoments.map((x, i) => [`${i + 1}`, x.description]) : [['-', 'Inga arbetsmoment angivna']], ['Ordning', 'Arbetsmoment'])
   if (d.executionOverview) { heading('Övergripande beskrivning', 2); paragraph(d.executionOverview) }
   heading('10. Förutsättningar på arbetsplatsen')
   table(conditions.map(([key, label]) => [label, `${d.conditions[key].answer}${d.conditions[key].comment ? ` – ${d.conditions[key].comment}` : ''}`]))
