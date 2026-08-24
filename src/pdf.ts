@@ -43,7 +43,7 @@ export function createPdfDocument(d: FormData) {
   const ensure = (height = 15) => { if (y + height > 282) { doc.addPage(); y = 18 } }
   const heading = (title: string, level = 1) => {
     ensure(level === 1 ? 18 : 12)
-    doc.setTextColor(level === 1 ? 25 : 36, level === 1 ? 53 : 78, level === 1 ? 45 : 63)
+    doc.setTextColor(level === 1 ? 32 : 228, level === 1 ? 32 : 99, level === 1 ? 32 : 0)
     doc.setFont('helvetica', 'bold'); doc.setFontSize(level === 1 ? 15 : 11)
     doc.text(title, margin, y); y += level === 1 ? 8 : 6
     doc.setTextColor(35, 40, 38)
@@ -56,19 +56,20 @@ export function createPdfDocument(d: FormData) {
   const table = (rows: Row[], headers: [string, string] = ['Uppgift', 'Svar']) => {
     autoTable(doc, { startY: y, head: [headers], body: rows, margin: { left: margin, right: margin },
       styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.3, overflow: 'linebreak' },
-      headStyles: { fillColor: [25, 53, 45], textColor: 255 }, alternateRowStyles: { fillColor: [241, 244, 240] },
+      headStyles: { fillColor: [32, 32, 32], textColor: 255 }, alternateRowStyles: { fillColor: [246, 246, 246] },
       rowPageBreak: 'avoid', showHead: 'everyPage' })
     y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || y) + 6
   }
   const dataTable = (headers: string[], rows: string[][]) => {
     autoTable(doc, { startY: y, head: [headers], body: rows.length ? rows : [['Ej aktuellt', ...headers.slice(1).map(() => '')]], margin: { left: margin, right: margin },
       styles: { font: 'helvetica', fontSize: 7.8, cellPadding: 2.1, overflow: 'linebreak' },
-      headStyles: { fillColor: [45, 91, 76], textColor: 255 }, alternateRowStyles: { fillColor: [241, 244, 240] },
+      headStyles: { fillColor: [228, 99, 0], textColor: 0 }, alternateRowStyles: { fillColor: [246, 246, 246] },
       rowPageBreak: 'avoid', showHead: 'everyPage' })
     y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || y) + 6
   }
 
-  doc.setFillColor(25, 53, 45); doc.rect(0, 0, 210, 36, 'F')
+  doc.setFillColor(32, 32, 32); doc.rect(0, 0, 210, 36, 'F')
+  doc.setFillColor(228, 99, 0); doc.rect(0, 36, 210, 3, 'F')
   doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('OFFERTUNDERLAG – SEVELUND AB', margin, 18)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('Tekniskt och praktiskt underlag – inga priser', margin, 26)
   y = 45; doc.setTextColor(35, 40, 38)
