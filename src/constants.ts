@@ -4,7 +4,7 @@ export const equipmentTypes = ['Bergborrmaskin', 'Luftkompressor', 'Darda', 'Bor
 export const materialTypes = ['Bergkross 0/32', 'Bergkross 0/16', 'Makadam 8/16', 'Makadam 16/32', 'Stenmjöl', 'Sättsand', 'Fogsand', 'Jord', 'Gräsmattejord', 'Natursingel', 'Marksten', 'Kantsten', 'Annat']
 export const massTypes = ['Jord', 'Lera', 'Schaktmassor', 'Berg', 'Spräckt berg', 'Betong', 'Asfalt', 'Blandmassor', 'Ris och trä', 'Annat']
 export const otherMaterialTypes = ['N2-markduk', 'N3-markduk', 'Dräneringsrör', 'Dagvattenrör', 'Skyddsrör', 'Dräneringsbrunn', 'Dagvattenbrunn', 'Isolering', 'Gräsfrö', 'Annat']
-export const units = ['Ton', 'Kubikmeter', 'Kvadratmeter', 'Löpmeter', 'Styck', 'BigBag', 'Lass']
+export const units = ['Ton', 'kg', 'Kubikmeter', 'Kvadratmeter', 'Löpmeter', 'Styck', 'BigBag', 'Lass']
 export const deliveryMethods = ['Massorna tippas', 'Flak ställs av med lastväxlare', 'Urlastning med grävmaskin', 'BigBag', 'Annat']
 export const conditions = [
   ['access', 'Är framkomligheten till arbetsplatsen begränsad?'],
