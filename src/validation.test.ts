@@ -35,5 +35,5 @@ describe('formulärvalidering', () => {
 
 describe('PDF-underlag', () => {
   it('skapar säkert filnamn med svenska tecken', () => { expect(safeFileName('Älvsjö / Ny yta!')).toBe('alvsjo-ny-yta') })
-  it('separerar mängd och enhet i strukturerad data', () => { const d = completeData(); d.materialsIn = [{ id: '1', type: 'Makadam 8/16', customType: '', quantity: 12, unit: 'Ton', deliveries: 1, deliveryMethod: 'Tippas löst', placement: 'Uppfart', comment: '' }]; const summary = buildStructuredSummary(d); expect(summary.material_till[0]).toMatchObject({ mangd: 12, enhet: 'Ton' }) })
+  it('separerar mängd och enhet i strukturerad data', () => { const d = completeData(); d.materialsIn = [{ id: '1', type: 'Makadam 8/16', customType: '', quantity: 12, unit: 'Ton', deliveries: 1, deliveryMethod: 'Massorna tippas', placement: 'Uppfart', comment: '' }]; const summary = buildStructuredSummary(d); expect(summary.material_till[0]).toMatchObject({ mangd: 12, enhet: 'Ton' }) })
 })

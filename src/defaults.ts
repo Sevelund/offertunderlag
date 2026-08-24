@@ -19,6 +19,6 @@ export const createInitialData = (): FormData => ({
 export const blankExcavator = () => ({ id: id(), size: '', customSize: '', days: 1, ownership: 'Egen', transportTo: true, transportFrom: true, comment: '' })
 export const blankMachine = (type = '') => ({ id: id(), type, size: '', days: 1, ownership: 'Hyrd', transportTo: true, transportFrom: true, comment: '' })
 export const blankEquipment = () => ({ id: id(), type: '', customType: '', size: '', quantity: 1, days: 1, ownership: 'Hyrd', transport: false, comment: '' })
-export const blankMaterialIn = () => ({ id: id(), type: '', customType: '', quantity: 1, unit: 'Ton', deliveries: 1, deliveryMethod: 'Tippas löst', placement: '', comment: '' })
+export const blankMaterialIn = () => ({ id: id(), type: '', customType: '', quantity: 1, unit: 'Ton', deliveries: 1, deliveryMethod: 'Massorna tippas', placement: '', comment: '' })
 export const blankMassOut = () => ({ id: id(), type: '', customType: '', quantity: 1, unit: 'Ton', loads: 1, contamination: 'Nej', destination: '', comment: '' })
 export const blankOtherMaterial = () => ({ id: id(), material: '', customMaterial: '', quantity: 1, unit: 'Styck', specification: '', comment: '' })
