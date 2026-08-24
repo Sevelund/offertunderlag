@@ -1,4 +1,4 @@
-export const workTypes = ['Markarbete', 'Bergspräckning', 'Dränering', 'Poolgrävning', 'Finplanering', 'Stenläggning', 'Mur eller trappa', 'VA-arbete', 'Trädfällning', 'Stubbfräsning', 'Annat']
+export const workTypes = ['Markarbete', 'Bergspräckning', 'Dränering', 'Poolgrävning', 'Grovplanering', 'Finplanering', 'Uppfart / infart', 'Stenläggning', 'Mur eller trappa', 'VA-arbete', 'El & fiber', 'Trädfällning', 'Stubbfräsning', 'Annat']
 export const excavatorSizes = ['Upp till 2 ton', 'Cirka 3,5 ton', 'Cirka 5–6 ton', 'Cirka 8 ton', 'Cirka 14–15 ton', 'Annan storlek']
 export const equipmentTypes = ['Bergborrmaskin', 'Luftkompressor', 'Darda', 'Borrvagn', 'Bilmaskin', 'Bergsåg', 'Motorkap', 'Stenkap', 'Våtdammsugare', 'Länspump', 'Laser', 'Släp', 'Annat']
 export const materialTypes = ['Bergkross 0/32', 'Bergkross 0/16', 'Makadam 8/16', 'Makadam 16/32', 'Stenmjöl', 'Sättsand', 'Fogsand', 'Jord', 'Gräsmattejord', 'Natursingel', 'Marksten', 'Kantsten', 'Annat']
