@@ -15,7 +15,7 @@ describe('gemensamt formulärarkiv', () => {
     }]), { status: 200, headers: { 'content-type': 'application/json' } })))
     const forms = await listRemoteArchives('lösenord', { href: 'https://sevelund.github.io/offertunderlag/' } as Location)
     expect(forms[0]).toMatchObject({ address: 'Testvägen 1', url: 'https://sevelund.github.io/offertunderlag/?underlag=20260902-abcdef12' })
-    expect(fetch).toHaveBeenCalledWith(`${ARCHIVE_API_URL}/archives`, expect.objectContaining({ headers: expect.objectContaining({ authorization: 'Bearer lösenord' }) }))
+    expect(fetch).toHaveBeenCalledWith(`${ARCHIVE_API_URL}/archives`, expect.objectContaining({ headers: expect.objectContaining({ 'x-sevelund-password': 'lösenord' }) }))
   })
 
   it('för över äldre lokala formulär endast en gång', async () => {

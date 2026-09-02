@@ -4,7 +4,7 @@ export const SITE_AUTH_KEY = 'sevelund-offertunderlag-site-auth'
 
 export async function verifyPassword(password: string) {
   try {
-    const response = await fetch(`${ARCHIVE_API_URL}/auth`, { headers: { authorization: `Bearer ${password}` } })
+    const response = await fetch(`${ARCHIVE_API_URL}/auth`, { headers: { 'x-sevelund-password': password } })
     return response.ok
   } catch { return false }
 }

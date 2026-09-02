@@ -7,7 +7,7 @@ export const LOCAL_MIGRATION_KEY = 'sevelund-offertunderlag-gemensamt-arkiv-v1'
 const request = async (path: string, password: string, init: RequestInit = {}) => {
   const response = await fetch(`${ARCHIVE_API_URL}${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${password}`, ...init.headers },
+    headers: { 'content-type': 'application/json', 'x-sevelund-password': password, ...init.headers },
   })
   if (!response.ok) {
     let message = 'Den gemensamma lagringen kunde inte nås.'
