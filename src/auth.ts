@@ -1,20 +1,25 @@
+import { ARCHIVE_API_URL } from './archive-api'
+
 export const SITE_AUTH_KEY = 'sevelund-offertunderlag-site-auth'
 
-export const SITE_PASSWORD_HASH = '36639c32351b36ee920219578afa34e2743f2a10065bf42297fbccc75b29f10f'
-
-export async function verifyPassword(password: string, expectedHash: string) {
-  const bytes = new TextEncoder().encode(password)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  const actualHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-  return actualHash === expectedHash
+export async function verifyPassword(password: string) {
+  try {
+    const response = await fetch(`${ARCHIVE_API_URL}/auth`, { headers: { authorization: `Bearer ${password}` } })
+    return response.ok
+  } catch { return false }
 }
 
 export function sessionIsUnlocked(key: string) {
-  try { return sessionStorage.getItem(key) === 'unlocked' }
+  try { return Boolean(sessionStorage.getItem(`${key}-password`)) }
   catch { return false }
 }
 
-export function unlockSession(key: string) {
-  try { sessionStorage.setItem(key, 'unlocked') }
+export function sessionPassword(key: string) {
+  try { return sessionStorage.getItem(`${key}-password`) || '' }
+  catch { return '' }
+}
+
+export function unlockSession(key: string, password: string) {
+  try { sessionStorage.setItem(`${key}-password`, password) }
   catch { /* Lösenordet får anges igen om sessionslagring är blockerad. */ }
 }

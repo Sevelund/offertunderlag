@@ -14,7 +14,7 @@ export interface SavedArchiveSummary extends SavedArchive {
 
 export const archiveKey = (id: string) => `${ARCHIVE_PREFIX}${id}`
 
-const archiveUrl = (id: string, location: Location) => {
+export const archiveUrl = (id: string, location: Location = window.location) => {
   const url = new URL(location.href)
   url.search = ''
   url.hash = ''

@@ -57,6 +57,14 @@ h3 { color: var(--green); margin: 30px 0 12px; }
 .required { color: #b43026; }
 input, select, textarea { width: 100%; min-height: 50px; border: 1.5px solid #bac4bd; border-radius: 10px; background: white; padding: 12px 13px; color: #202925; }
 input:focus, select:focus, textarea:focus { outline: 3px solid rgba(228, 99, 0, .18); border-color: var(--green-2); }
+.number-control { position: relative; }
+.number-control input { padding-right: 58px; appearance: textfield; -moz-appearance: textfield; }
+.number-control input::-webkit-inner-spin-button, .number-control input::-webkit-outer-spin-button { margin: 0; appearance: none; -webkit-appearance: none; }
+.number-arrows { position: absolute; inset: 1.5px 1.5px 1.5px auto; width: 46px; display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; border-left: 1px solid #bac4bd; border-radius: 0 8px 8px 0; }
+.number-arrows button { min-height: 0; border: 0; background: #f3f3f3; color: #202020; font-size: 12px; line-height: 1; touch-action: manipulation; }
+.number-arrows button:first-child { border-bottom: 1px solid #bac4bd; }
+.number-arrows button:hover, .number-arrows button:active { background: var(--orange-soft); color: #8a3b00; }
+.number-arrows button:focus-visible { position: relative; z-index: 1; outline: 3px solid rgba(228, 99, 0, .28); }
 textarea { min-height: 95px; resize: vertical; }
 textarea.large { min-height: 180px; }
 .grid { display: grid; gap: 0 18px; }

@@ -32,6 +32,13 @@ describe('formulärvalidering', () => {
     d.totalDays = 2; d.personnel[0].days = 2; d.smallCompactor = true; d.smallCompactorDays = 0.5
     expect(getStepErrors(d)[5]).toContain('Antal dagar för padda måste anges i hela dagar')
   })
+  it('validerar borttransport före materialleveranser', () => {
+    const d = completeData()
+    d.massOutNeeded = true; d.massesOut = []
+    d.materialInNeeded = true; d.materialsIn = []
+    expect(getStepErrors(d)[6]).toContain('Fyll i alla massor som ska köras bort')
+    expect(getStepErrors(d)[7]).toContain('Fyll i allt material till arbetsplatsen')
+  })
 })
 
 describe('PDF-underlag', () => {
