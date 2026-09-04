@@ -41,12 +41,18 @@ export async function deleteRemoteArchive(id: string, password: string) {
 }
 
 export async function migrateLocalArchives(password: string, storage: Storage = localStorage, location: Location = window.location) {
-  if (storage.getItem(LOCAL_MIGRATION_KEY) === 'done') return 0
   const localForms = listArchivedForms(storage, location)
+  if (!localForms.length) return 0
+  const remoteIds = new Set((await listRemoteArchives(password, location)).map(form => form.id))
+  let uploaded = 0
   for (const form of localForms) {
+    if (remoteIds.has(form.id)) continue
     const data = loadArchivedForm(form.id, storage)
-    if (data) await saveRemoteArchive(form.id, data, password, true)
+    if (data) {
+      await saveRemoteArchive(form.id, data, password, true)
+      uploaded += 1
+    }
   }
-  storage.setItem(LOCAL_MIGRATION_KEY, 'done')
-  return localForms.length
+  storage.removeItem(LOCAL_MIGRATION_KEY)
+  return uploaded
 }
