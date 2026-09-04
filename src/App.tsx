@@ -7,7 +7,7 @@ import { canAdvance, getStepErrors, isComplete } from './validation'
 import { compressImage } from './image'
 import { generatePdf } from './pdf'
 import { Field, NumberInput, RepeaterCard, Section, YesNo } from './components'
-import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, deleteArchivedForm, listArchivedForms, loadArchivedForm, saveArchivedForm, type SavedArchive } from './archive'
+import { ACTIVE_STORAGE_KEY, archiveIdFromUrl, archiveKey, deleteArchivedForm, loadArchivedForm, saveArchivedForm, type SavedArchive, type SavedArchiveSummary } from './archive'
 import { deleteRemoteArchive, listRemoteArchives, loadRemoteArchive, migrateLocalArchives, saveRemoteArchive } from './archive-api'
 import { SITE_AUTH_KEY, sessionIsUnlocked, sessionPassword, unlockSession, verifyPassword } from './auth'
 import { calculateTransport, materialDensities } from './weight'
@@ -37,9 +37,10 @@ export default function App() {
   const [archiveId, setArchiveId] = useState(archiveIdFromUrl)
   const [archiveReady, setArchiveReady] = useState(() => !archiveIdFromUrl())
   const [lastSaved, setLastSaved] = useState<SavedArchive | null>(null)
-  const [savedForms, setSavedForms] = useState(listArchivedForms)
+  const [savedForms, setSavedForms] = useState<SavedArchiveSummary[]>([])
   const [showArchives, setShowArchives] = useState(false)
   const [archiveLoading, setArchiveLoading] = useState(false)
+  const [archiveError, setArchiveError] = useState('')
   const [copied, setCopied] = useState(false)
   const [showStepErrors, setShowStepErrors] = useState(false)
   const [storageError, setStorageError] = useState('')
@@ -153,9 +154,12 @@ export default function App() {
     unlockSession(SITE_AUTH_KEY, password); setSitePassword(password); setSiteUnlocked(true); return true
   }
   const openArchives = async () => {
-    setShowArchives(true); setArchiveLoading(true)
+    setShowArchives(true); setArchiveLoading(true); setArchiveError(''); setSavedForms([])
     try { await migrateLocalArchives(sitePassword); setSavedForms(await listRemoteArchives(sitePassword)); setStorageError('') }
-    catch (error) { setStorageError(error instanceof Error ? error.message : 'Den gemensamma lagringen kunde inte nås.') }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Den gemensamma lagringen kunde inte nås.'
+      setArchiveError(message); setStorageError(message)
+    }
     finally { setArchiveLoading(false) }
   }
 
@@ -173,7 +177,7 @@ export default function App() {
 
   return <>
     <header className="topbar"><div className="brand"><span className="mark">S</span><div><strong>Sevelund AB</strong><small>Offertunderlag</small></div></div><div className="top-actions"><button type="button" className="ghost" onClick={() => go(1)}>Första sidan</button><button type="button" className="ghost" onClick={startNew}>Nytt formulär</button><button type="button" className="ghost" onClick={openArchives}>Sparade formulär{savedForms.length ? ` (${savedForms.length})` : ''}</button><button type="button" className="ghost" onClick={() => go(14)}>Gå till sammanställning</button></div></header>
-    {showArchives && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowArchives(false) }}><section className="archive-modal" role="dialog" aria-modal="true" aria-labelledby="archive-title"><div className="archive-head"><div><h2 id="archive-title">Sparade formulär</h2><p>Här visas samtliga sparade formulär från alla enheter.</p></div><button type="button" aria-label="Stäng" onClick={() => setShowArchives(false)}>×</button></div>{archiveLoading ? <div className="archive-empty"><b>Hämtar sparade formulär…</b></div> : savedForms.length ? <div className="archive-list">{savedForms.map(form => <article className="archive-row" key={form.id}><div><b>{form.address || 'Adress saknas'}</b><span>{form.customerName || 'Kundnamn saknas'} · Bedömning {form.assessmentDate || 'datum saknas'}</span><small>Sparad {form.savedDate || 'okänt datum'}{form.imageCount ? ` · ${form.imageCount} bilder` : ''}</small></div><div className="archive-actions"><a href={form.url}>Öppna</a><button type="button" onClick={() => removeSavedForm(form.id)}>Radera</button></div></article>)}</div> : <div className="archive-empty"><b>Det finns inga sparade formulär.</b><span>En kopia skapas automatiskt när du genererar en PDF.</span></div>}</section></div>}
+    {showArchives && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowArchives(false) }}><section className="archive-modal" role="dialog" aria-modal="true" aria-labelledby="archive-title"><div className="archive-head"><div><h2 id="archive-title">Sparade formulär</h2><p>Här visas samtliga sparade formulär från alla enheter.</p></div><button type="button" aria-label="Stäng" onClick={() => setShowArchives(false)}>×</button></div>{archiveLoading ? <div className="archive-empty"><b>Hämtar sparade formulär…</b></div> : archiveError ? <div className="archive-empty"><b>Det gemensamma arkivet kunde inte hämtas.</b><span>{archiveError} Stäng rutan och försök igen.</span></div> : savedForms.length ? <div className="archive-list">{savedForms.map(form => <article className="archive-row" key={form.id}><div><b>{form.address || 'Adress saknas'}</b><span>{form.customerName || 'Kundnamn saknas'} · Bedömning {form.assessmentDate || 'datum saknas'}</span><small>Sparad {form.savedDate || 'okänt datum'}{form.imageCount ? ` · ${form.imageCount} bilder` : ''}</small></div><div className="archive-actions"><a href={form.url}>Öppna</a><button type="button" onClick={() => removeSavedForm(form.id)}>Radera</button></div></article>)}</div> : <div className="archive-empty"><b>Det finns inga sparade formulär.</b><span>En kopia skapas automatiskt när du genererar en PDF.</span></div>}</section></div>}
     <div className="progress-wrap"><div className="progress-meta"><span>Steg {step} av {stepNames.length}</span><b>{stepNames[step - 1]}</b><span>{Math.round(step / stepNames.length * 100)} %</span></div><div className="progress"><span style={{ width: `${step / stepNames.length * 100}%` }} /></div></div>
     <main>
       {archiveId && <div className="alert info">Du arbetar i ett sparat formulär. Ändringar sparas automatiskt och kan nås från alla enheter.</div>}
