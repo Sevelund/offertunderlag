@@ -18,14 +18,23 @@ describe('gemensamt formulärarkiv', () => {
     expect(fetch).toHaveBeenCalledWith(`${ARCHIVE_API_URL}/archives`, expect.objectContaining({ headers: expect.objectContaining({ 'x-sevelund-password': 'lösenord' }) }))
   })
 
-  it('för över äldre lokala formulär endast en gång', async () => {
+  it('för över lokala formulär som saknas i det gemensamma arkivet', async () => {
     const data = createInitialData(); data.address = 'Gammalvägen 1'
     saveArchivedForm(data, localStorage, { href: 'https://sevelund.github.io/offertunderlag/' } as Location)
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'ok' }), { status: 200, headers: { 'content-type': 'application/json' } }))
+    const remoteIds: string[] = []
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/archives')) {
+        return new Response(JSON.stringify(remoteIds.map(id => ({ id, customerName: '', address: '', assessmentDate: '', savedDate: '', imageCount: 0 }))), { status: 200 })
+      }
+      const id = decodeURIComponent(url.slice(url.lastIndexOf('/') + 1))
+      if (init?.method === 'PUT') remoteIds.push(id)
+      return new Response(JSON.stringify({ id }), { status: 200 })
+    })
     vi.stubGlobal('fetch', fetchMock)
     expect(await migrateLocalArchives('lösenord')).toBe(1)
-    expect(localStorage.getItem(LOCAL_MIGRATION_KEY)).toBe('done')
+    expect(localStorage.getItem(LOCAL_MIGRATION_KEY)).toBeNull()
     expect(await migrateLocalArchives('lösenord')).toBe(0)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 })
