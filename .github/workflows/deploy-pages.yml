@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Hämta koden
         uses: actions/checkout@v4
@@ -26,7 +27,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Installera beroenden
-        run: npm ci
+        run: npm ci --no-audit --no-fund --prefer-offline
       - name: Kör tester
         run: npm test
       - name: Bygg webbplatsen
